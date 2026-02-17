@@ -4,7 +4,7 @@ AI coding agent skills and instructions for [Velocity](https://velocity.quest) �
 
 ## What is this?
 
-This repository contains instruction files that AI coding agents can consume to understand how to interact with the Velocity MCP server. Drop these files into your project, and your agent will know how to create issues, query projects, manage cycles, and more — all without leaving your editor.
+This repository contains instruction files that AI coding agents can consume to understand how to interact with the Velocity MCP server. Drop these files into your project, and your agent will know how to create issues, manage projects, plan roadmaps, configure workspaces, and more — all without leaving your editor.
 
 ## Prerequisites
 
@@ -117,25 +117,75 @@ Add to `.vscode/mcp.json` in your project root:
 }
 ```
 
-## Available MCP Tools
+## Available MCP Tools (38)
 
-| Tool | Description | Required Scope |
-|------|-------------|----------------|
-| `list_teams` | List all teams in the workspace | `read:teams` |
-| `get_team` | Get details for a specific team | `read:teams` |
-| `list_issues` | List issues with filtering and pagination | `read:issues` |
-| `get_issue` | Get full issue details by identifier | `read:issues` |
-| `create_issue` | Create a new issue | `write:issues` |
-| `update_issue` | Update an existing issue | `write:issues` |
-| `list_projects` | List projects in the workspace | `read:projects` |
-| `get_project` | Get project details and milestones | `read:projects` |
-| `list_cycles` | List cycles (sprints) | `read:cycles` |
-| `get_cycle` | Get cycle details and snapshot | `read:cycles` |
-| `list_labels` | List available labels | `read:labels` |
-| `list_statuses` | List workflow statuses | `read:statuses` |
-| `list_members` | List workspace members | `read:members` |
-| `search` | Search across issues, projects, and cycles | `read:issues` |
-| `get_workspace` | Get workspace info and stats | `read:workspace` |
+### Issue Tracking
+
+| Tool | Description | Scope |
+|------|-------------|-------|
+| `list_issues` | List issues with filtering and pagination | read |
+| `get_issue` | Get full issue details by UUID or identifier | read |
+| `create_issue` | Create a new issue | write |
+| `update_issue` | Update an existing issue | write |
+| `search_issues` | Full-text search across issues | read |
+| `add_comment` | Add a comment to an issue | write |
+| `list_comments` | List all comments on an issue | read |
+
+### Projects & Cycles
+
+| Tool | Description | Scope |
+|------|-------------|-------|
+| `list_projects` | List projects with status filter | read |
+| `get_project` | Get project details and milestones | read |
+| `list_cycles` | List cycles (sprints) with status filter | read |
+| `get_cycle` | Get cycle details and progress | read |
+
+### Workspace Metadata
+
+| Tool | Description | Scope |
+|------|-------------|-------|
+| `list_teams` | List all teams in the workspace | read |
+| `list_labels` | List available labels | read |
+| `list_statuses` | List workflow statuses | read |
+| `list_members` | List workspace members | read |
+
+### Roadmap
+
+| Tool | Description | Scope |
+|------|-------------|-------|
+| `list_roadmap_items` | List roadmap items with filters | read |
+| `create_roadmap_item` | Create a roadmap item | write |
+| `update_roadmap_item` | Update a roadmap item | write |
+| `delete_roadmap_item` | Delete a roadmap item | write |
+| `vote_roadmap_item` | Toggle vote on a roadmap item | write |
+| `list_roadmap_versions` | List roadmap versions (releases) | read |
+| `create_roadmap_version` | Create a roadmap version | write |
+| `get_roadmap_settings` | Get roadmap settings | read |
+| `update_roadmap_settings` | Update roadmap settings | write |
+
+### Workspace & User
+
+| Tool | Description | Scope |
+|------|-------------|-------|
+| `list_workspaces` | List all workspaces the user belongs to | read |
+| `create_workspace` | Create a new workspace (user becomes owner) | write |
+| `delete_workspace` | Permanently delete a workspace (owner only) | write |
+| `get_workspace` | Get current workspace details | read |
+| `update_workspace` | Update workspace name or description | write |
+| `get_current_user` | Get authenticated user's profile | read |
+| `update_current_user` | Update user display name or avatar | write |
+| `list_user_api_keys` | List personal API keys (`velu_` prefix) | read |
+| `create_user_api_key` | Create a personal API key (returned once) | write |
+| `revoke_user_api_key` | Revoke a personal API key | write |
+
+### Custom Domains
+
+| Tool | Description | Scope |
+|------|-------------|-------|
+| `list_domains` | List custom domains | read |
+| `add_domain` | Add a custom domain | write |
+| `verify_domain` | Verify domain DNS records | write |
+| `remove_domain` | Remove a custom domain | write |
 
 ## Using the Skill Files
 
