@@ -1,76 +1,131 @@
 # Velocity MCP Server
 
-You have access to the Velocity project management MCP server at `https://velocity.quest/api/mcp`. Use it to manage issues, projects, roadmaps, workspaces, and more.
+You have access to the Velocity project management MCP server at `https://velocity.quest/api/mcp`. Use it **proactively** during development to track your work, file bugs, update issue statuses, and add comments — not just when the user explicitly asks.
 
-## Read Tools
+## Agentic Development Flow
+
+### Starting a Session
+
+Before doing any work, orient yourself in the workspace:
+
+```
+list_teams      → discover teams and their ID prefixes (ENG, DES, OPS)
+list_statuses   → learn the workflow states (Backlog, Todo, In Progress, Done, Cancelled)
+list_members    → know who's on the team
+list_labels     → available categorization tags (bug, feature, etc.)
+```
+
+### Picking Up an Issue
+
+When the user asks you to work on `ENG-42` or describes something that maps to an existing issue:
+
+```
+get_issue(issueId: "ENG-42")                                    → read full context
+list_comments(issueId: "...")                                    → read discussion history
+update_issue(issueId: "...", statusId: "<in_progress_status>")   → mark In Progress
+add_comment(issueId: "...", body: "Starting work. Plan: ...")    → log your approach
+```
+
+### Creating a New Issue
+
+When the user describes work that doesn't have an issue yet, or you discover a bug:
+
+```
+search_issues(query: "...")    → check for duplicates first
+create_issue(
+  title: "Bug: login fails with expired token",
+  teamId: "...",
+  priority: "HIGH",
+  description: "## Summary\n...\n\n## Steps to Reproduce\n1. ...\n\n## Expected\n...\n\n## Actual\n...",
+  labelIds: ["<bug_label_id>"]
+)
+```
+
+Write descriptions in Markdown — they render as rich text in Velocity.
+
+### Updating Progress
+
+As you work, keep the issue updated with comments:
+
+```
+add_comment(issueId: "...", body: "Implemented the data model changes. Moving to API layer.")
+add_comment(issueId: "...", body: "Found related issue — also affects billing. Filing follow-up.")
+add_comment(issueId: "...", body: "Blocked: need clarification on the auth flow before proceeding.")
+```
+
+### Completing Work
+
+```
+update_issue(issueId: "...", statusId: "<done_status>")
+add_comment(issueId: "...", body: "Done. Changes:\n- Added retry logic to auth\n- Updated error handling in API\n- Tests passing")
+```
+
+If you identified follow-up work:
+```
+create_issue(title: "Follow-up: refactor token refresh logic", teamId: "...", priority: "MEDIUM",
+  description: "Discovered during ENG-42. The token refresh path has duplicated logic that should be consolidated.")
+```
+
+### Proactive Behaviors
+
+**DO** use Velocity automatically when:
+- Starting any development task → set issue to In Progress
+- Finishing work → mark Done, add summary comment
+- Discovering a bug → file it immediately, don't just mention it in chat
+- Making a technical decision → comment on the issue with your reasoning
+- Finding related issues → cross-reference with comments
+- The user asks "what's left?" → query issues and give a real answer
+
+**DON'T** wait for the user to say "create an issue" or "update the status." Track your work like a senior engineer would.
+
+## All Tools (38)
 
 ### Issue Tracking
-- `list_issues` — List issues. Supports filters: `projectId`, `statusId`, `priority`, `assigneeId`, `labelId`. Supports `limit`/`offset` pagination.
-- `get_issue` — Get a single issue by UUID or identifier (e.g. `ENG-42`).
-- `search_issues` — Full-text search across issue titles, descriptions, and identifiers.
-- `list_comments` — List all comments on an issue.
+- `list_issues` — List/filter issues. Filters: `projectId`, `statusId`, `priority` (URGENT/HIGH/MEDIUM/LOW/NONE), `assigneeId`, `labelId`. Pagination: `limit`, `offset`.
+- `get_issue` — Get issue by UUID or identifier (e.g. `ENG-42`).
+- `create_issue` — Create issue. Required: `title`, `teamId`. Optional: `description`, `priority`, `statusId`, `assigneeId`, `labelIds`, `projectId`.
+- `update_issue` — Update issue. Required: `issueId`. Optional: `title`, `description`, `priority`, `statusId`, `assigneeId`.
+- `search_issues` — Full-text search across titles, descriptions, identifiers. Required: `query`. Optional: `limit`.
+- `add_comment` — Comment on an issue. Required: `issueId`, `body`. Optional: `parentId` (for threaded replies).
+- `list_comments` — List all comments on an issue. Required: `issueId`.
 
 ### Projects & Cycles
-- `list_projects` — List all projects. Supports `status` filter (BACKLOG, PLANNED, IN_PROGRESS, COMPLETED, CANCELLED).
-- `get_project` — Get project details including milestones and issue count.
-- `list_cycles` — List cycles (sprints). Supports `status` filter (UPCOMING, ACTIVE, COMPLETED).
-- `get_cycle` — Get cycle details with issue counts and progress.
+- `list_projects` — List projects. Filter: `status` (BACKLOG/PLANNED/IN_PROGRESS/COMPLETED/CANCELLED).
+- `get_project` — Project details with milestones and issue count. Required: `projectId`.
+- `list_cycles` — List sprints. Filter: `status` (UPCOMING/ACTIVE/COMPLETED).
+- `get_cycle` — Cycle details with issue counts and progress. Required: `id`.
 
 ### Workspace Metadata
-- `list_teams` — List all teams. Call this first to discover team IDs.
-- `list_labels` — List available labels.
-- `list_statuses` — List workflow statuses across all teams.
-- `list_members` — List workspace members with roles.
+- `list_teams` — All teams. **Call first** to discover team IDs.
+- `list_labels` — All labels.
+- `list_statuses` — All workflow statuses per team. **Call early** to learn status IDs.
+- `list_members` — All workspace members with roles.
 
 ### Roadmap
-- `list_roadmap_items` — List roadmap items with status, category, and version filters.
-- `list_roadmap_versions` — List all roadmap versions (releases).
-- `get_roadmap_settings` — Get roadmap visibility and voting settings.
+- `list_roadmap_items` — List items. Filters: `status`, `category` (FEATURE/IMPROVEMENT/BUG/INFRASTRUCTURE), `versionId`, `limit`.
+- `create_roadmap_item` — Required: `title`. Optional: `description`, `status`, `category`, `versionId`, `assigneeId`, `isPublic`.
+- `update_roadmap_item` — Required: `id`. Same optional fields as create.
+- `delete_roadmap_item` — Required: `id`.
+- `vote_roadmap_item` — Toggle vote. Required: `id`.
+- `list_roadmap_versions` — All versions (releases).
+- `create_roadmap_version` — Required: `name`. Optional: `description`, `targetDate`.
+- `get_roadmap_settings` — Visibility and voting settings.
+- `update_roadmap_settings` — Optional: `isPublicEnabled`, `allowSubmissions`, `allowVoting`.
 
 ### Workspace & User
-- `list_workspaces` — List all workspaces the user belongs to.
-- `get_workspace` — Get current workspace details (name, slug, plan, member/team counts).
-- `get_current_user` — Get the authenticated user's profile.
-- `list_user_api_keys` — List personal API keys (`velu_` prefix).
+- `list_workspaces` — All workspaces the user belongs to.
+- `create_workspace` — Required: `name`, `slug`. Optional: `logoUrl`. User becomes owner.
+- `delete_workspace` — Required: `id`. Owner only.
+- `get_workspace` — Current workspace details (name, slug, plan, counts).
+- `update_workspace` — Optional: `name`, `description`.
+- `get_current_user` — Authenticated user's profile.
+- `update_current_user` — Optional: `displayName`, `avatarUrl`.
+- `list_user_api_keys` — Personal API keys (`velu_` prefix).
+- `create_user_api_key` — Required: `name`, `scopes`. Key returned once.
+- `revoke_user_api_key` — Required: `id`.
 
 ### Custom Domains
-- `list_domains` — List custom domains with verification status.
-
-## Write Tools
-
-### Issue Tracking
-- `create_issue` — Create a new issue. Required: `title`, `teamId`. Optional: `description`, `priority` (URGENT/HIGH/MEDIUM/LOW/NONE), `statusId`, `assigneeId`, `labelIds`, `projectId`.
-- `update_issue` — Update an issue by UUID. Any field can be updated.
-- `add_comment` — Add a comment to an issue. Supports threaded replies via `parentId`.
-
-### Roadmap
-- `create_roadmap_item` — Create a roadmap item with title, status, category, version.
-- `update_roadmap_item` — Update a roadmap item.
-- `delete_roadmap_item` — Delete a roadmap item.
-- `vote_roadmap_item` — Toggle vote on a roadmap item.
-- `create_roadmap_version` — Create a new roadmap version (release milestone).
-- `update_roadmap_settings` — Update roadmap visibility and voting settings.
-
-### Workspace & User
-- `create_workspace` — Create a new workspace. Required: `name`, `slug`. User becomes owner.
-- `update_workspace` — Update workspace name or description.
-- `delete_workspace` — Permanently delete a workspace (owner only).
-- `update_current_user` — Update user display name or avatar.
-- `create_user_api_key` — Create a personal API key. Required: `name`, `scopes`. Key returned once.
-- `revoke_user_api_key` — Revoke a personal API key by ID.
-
-### Custom Domains
-- `add_domain` — Add a custom domain. Returns DNS setup instructions.
-- `verify_domain` — Trigger domain verification.
-- `remove_domain` — Remove a custom domain.
-
-## Workflow Tips
-
-1. **Start with `list_teams`** to discover available teams and their IDs before creating or querying issues.
-2. **Use identifiers** (e.g. `ENG-42`) when referencing issues — they are human-readable and stable.
-3. **Check for duplicates** with `search_issues` or `list_issues` before creating new issues.
-4. **Priority levels**: URGENT, HIGH, MEDIUM, LOW, NONE.
-5. **Status names** are workspace-specific. Use `list_statuses` to get the exact names and IDs.
-6. When the user says "file a bug" or "create a ticket", use `create_issue`.
-7. When the user asks "what am I working on?", use `list_issues` filtered by their assignee ID.
-8. Use `list_workspaces` to discover workspaces, `create_workspace` to set up new ones.
+- `list_domains` — All custom domains with verification status.
+- `add_domain` — Required: `domain`. Returns DNS setup instructions.
+- `verify_domain` — Required: `id`.
+- `remove_domain` — Required: `id`.

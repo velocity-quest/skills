@@ -4,7 +4,7 @@ AI coding agent skills and instructions for [Velocity](https://velocity.quest) �
 
 ## What is this?
 
-This repository contains instruction files that AI coding agents can consume to understand how to interact with the Velocity MCP server. Drop these files into your project, and your agent will know how to create issues, manage projects, plan roadmaps, configure workspaces, and more — all without leaving your editor.
+This repository contains instruction files that teach AI coding agents how to use the Velocity MCP server **proactively during development** — not just when explicitly asked. Drop these files into your project, and your agent will automatically track its work: picking up issues, updating progress, filing bugs, and marking tasks complete.
 
 ## Prerequisites
 
@@ -117,21 +117,33 @@ Add to `.vscode/mcp.json` in your project root:
 }
 ```
 
+## How Agents Use Velocity
+
+Once connected, agents follow an **agentic development workflow**:
+
+1. **Orient** — Call `list_teams`, `list_statuses`, `list_labels` to understand the workspace
+2. **Pick up work** — `get_issue("ENG-42")` to read context, `update_issue` to mark In Progress
+3. **Track progress** — `add_comment` as they implement, noting decisions and blockers
+4. **Complete** — `update_issue` to mark Done, `add_comment` with a summary of changes
+5. **File follow-ups** — `create_issue` for bugs discovered or work identified during implementation
+
+Agents are instructed to use these tools **proactively** — they don't wait for the user to say "create an issue" or "update the status."
+
 ## Available MCP Tools (38)
 
-### Issue Tracking
+### Issue Tracking (7 tools)
 
 | Tool | Description | Scope |
 |------|-------------|-------|
 | `list_issues` | List issues with filtering and pagination | read |
-| `get_issue` | Get full issue details by UUID or identifier | read |
+| `get_issue` | Get full issue details by UUID or identifier (e.g. `ENG-42`) | read |
 | `create_issue` | Create a new issue | write |
 | `update_issue` | Update an existing issue | write |
 | `search_issues` | Full-text search across issues | read |
-| `add_comment` | Add a comment to an issue | write |
+| `add_comment` | Add a comment to an issue (supports threaded replies) | write |
 | `list_comments` | List all comments on an issue | read |
 
-### Projects & Cycles
+### Projects & Cycles (4 tools)
 
 | Tool | Description | Scope |
 |------|-------------|-------|
@@ -140,16 +152,16 @@ Add to `.vscode/mcp.json` in your project root:
 | `list_cycles` | List cycles (sprints) with status filter | read |
 | `get_cycle` | Get cycle details and progress | read |
 
-### Workspace Metadata
+### Workspace Metadata (4 tools)
 
 | Tool | Description | Scope |
 |------|-------------|-------|
 | `list_teams` | List all teams in the workspace | read |
 | `list_labels` | List available labels | read |
-| `list_statuses` | List workflow statuses | read |
+| `list_statuses` | List workflow statuses per team | read |
 | `list_members` | List workspace members | read |
 
-### Roadmap
+### Roadmap (9 tools)
 
 | Tool | Description | Scope |
 |------|-------------|-------|
@@ -163,7 +175,7 @@ Add to `.vscode/mcp.json` in your project root:
 | `get_roadmap_settings` | Get roadmap settings | read |
 | `update_roadmap_settings` | Update roadmap settings | write |
 
-### Workspace & User
+### Workspace & User (10 tools)
 
 | Tool | Description | Scope |
 |------|-------------|-------|
@@ -178,7 +190,7 @@ Add to `.vscode/mcp.json` in your project root:
 | `create_user_api_key` | Create a personal API key (returned once) | write |
 | `revoke_user_api_key` | Revoke a personal API key | write |
 
-### Custom Domains
+### Custom Domains (4 tools)
 
 | Tool | Description | Scope |
 |------|-------------|-------|
@@ -196,7 +208,7 @@ Add to `.vscode/mcp.json` in your project root:
 | `claude-code/SKILL.md` | Claude Code | Installable skill with tool reference |
 | `.github/copilot-instructions.md` | GitHub Copilot | Custom instructions for Copilot |
 
-Copy any of these files into your project to give the respective agent context about Velocity's MCP tools.
+Copy any of these files into your project to give the respective agent context about Velocity's MCP tools and the agentic development workflow.
 
 ## License
 

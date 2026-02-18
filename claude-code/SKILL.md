@@ -1,123 +1,231 @@
 ---
 name: velocity
-description: Manage issues, projects, roadmaps, workspaces, and more in Velocity via MCP. Use when the user asks about issues, bugs, tasks, projects, sprints, roadmap, domains, or team workload.
+description: Manage issues, projects, and workspaces in Velocity via MCP. Use proactively during development to track progress, file bugs, update statuses, and comment on issues — not just when the user explicitly asks.
 allowed-tools: Read, Grep, Bash
 ---
 
 # Velocity MCP Skill
 
-Use the Velocity MCP tools to interact with the user's project management workspace.
+You have access to the Velocity project management MCP server. Use it **proactively** during development — not just when the user explicitly asks about issues or projects.
 
-## MCP Tool Reference
+## Agentic Development Workflow
 
-### Issue Tracking
+This is the core loop for how you should use Velocity while coding:
 
-- **list_issues**(projectId?, statusId?, priority?, assigneeId?, labelId?, limit?, offset?) — List issues with filters and pagination.
-- **get_issue**(issueId) — Get full issue details by UUID or identifier (e.g. `ENG-42`).
-- **create_issue**(title, teamId, description?, priority?, statusId?, assigneeId?, labelIds?, projectId?) — Create a new issue.
-- **update_issue**(issueId, title?, description?, priority?, statusId?, assigneeId?) — Update an existing issue.
-- **search_issues**(query, limit?) — Full-text search across issue titles, descriptions, and identifiers.
-- **add_comment**(issueId, body, parentId?) — Add a comment to an issue.
-- **list_comments**(issueId) — List all comments on an issue.
+### 1. Orient — Understand the Workspace
 
-### Projects & Cycles
-
-- **list_projects**(status?) — List all projects. Status: BACKLOG, PLANNED, IN_PROGRESS, COMPLETED, CANCELLED.
-- **get_project**(projectId) — Get project details with milestones and issue count.
-- **list_cycles**(status?) — List sprint cycles. Status: UPCOMING, ACTIVE, COMPLETED.
-- **get_cycle**(id) — Get cycle details with issue counts and progress.
-
-### Workspace Metadata
-
-- **list_teams** — List all teams. Call first to get team IDs.
-- **list_labels** — List available labels.
-- **list_statuses** — List all workflow statuses across teams.
-- **list_members** — List workspace members with roles.
-
-### Roadmap
-
-- **list_roadmap_items**(status?, category?, versionId?, limit?) — List roadmap items with filters.
-- **create_roadmap_item**(title, description?, status?, category?, versionId?, assigneeId?, isPublic?) — Create a roadmap item.
-- **update_roadmap_item**(id, title?, description?, status?, category?, versionId?, assigneeId?, isPublic?) — Update a roadmap item.
-- **delete_roadmap_item**(id) — Delete a roadmap item.
-- **vote_roadmap_item**(id) — Toggle vote on a roadmap item.
-- **list_roadmap_versions** — List all roadmap versions (releases).
-- **create_roadmap_version**(name, description?, targetDate?) — Create a new roadmap version.
-- **get_roadmap_settings** — Get roadmap visibility and voting settings.
-- **update_roadmap_settings**(isPublicEnabled?, allowSubmissions?, allowVoting?) — Update roadmap settings.
-
-### Workspace & User
-
-- **list_workspaces** — List all workspaces the user belongs to.
-- **create_workspace**(name, slug, logoUrl?) — Create a new workspace (user becomes owner).
-- **delete_workspace**(id) — Permanently delete a workspace (owner only).
-- **get_workspace** — Get current workspace details (name, slug, plan, member/team counts).
-- **update_workspace**(name?, description?) — Update workspace name or description.
-- **get_current_user** — Get the authenticated user's profile.
-- **update_current_user**(displayName?, avatarUrl?) — Update user display name or avatar.
-- **list_user_api_keys** — List personal API keys (`velu_` prefix).
-- **create_user_api_key**(name, scopes) — Create a personal API key (returned once).
-- **revoke_user_api_key**(id) — Revoke a personal API key.
-
-### Custom Domains
-
-- **list_domains** — List custom domains with verification status.
-- **add_domain**(domain) — Add a custom domain with DNS setup instructions.
-- **verify_domain**(id) — Check domain verification status.
-- **remove_domain**(id) — Remove a custom domain.
-
-## Priority Levels
-
-| Value | Label |
-|-------|-------|
-| URGENT | Urgent |
-| HIGH | High |
-| MEDIUM | Medium |
-| LOW | Low |
-| NONE | No priority |
-
-## Identifier Format
-
-Issues use team-prefixed identifiers like `ENG-42`, `DES-7`. Always prefer identifiers over UUIDs when communicating with the user.
-
-## Example Workflows
-
-### File a bug
+Before doing any work, discover the workspace structure. Cache these results mentally for the session:
 
 ```
-1. list_teams → find the right team
-2. create_issue(title: "Bug: ...", teamId: "...", priority: "HIGH")
+list_teams         → team IDs and prefixes (e.g. ENG, DES, OPS)
+list_statuses      → workflow states per team (Backlog, Todo, In Progress, Done, Cancelled)
+list_members       → who's on the team, their user IDs
+list_labels        → available labels (bug, feature, improvement, etc.)
 ```
 
-### What's assigned to me?
+### 2. Pick Up Work — Find or Create Issues
 
+**When the user asks you to work on something specific:**
 ```
-1. list_members → find user's member ID
-2. list_issues(assigneeId: "...")
-```
-
-### Move an issue to Done
-
-```
-1. list_statuses → find the "Done" status ID
-2. update_issue(issueId: "...", statusId: "...")
+get_issue(issueId: "ENG-42")              → get full context
+list_comments(issueId: "...")              → read discussion history
+update_issue(issueId: "...", statusId: "in_progress_id")  → mark In Progress
+add_comment(issueId: "...", body: "Starting work on this. Plan: ...")
 ```
 
-### Search for related issues
-
+**When the user describes work without referencing an issue:**
 ```
-search_issues(query: "authentication timeout")
-```
-
-### Create a workspace
-
-```
-create_workspace(name: "Acme Inc", slug: "acme-inc")
+search_issues(query: "the thing they described")  → check if it already exists
+# If no match:
+create_issue(title: "...", teamId: "...", priority: "...", description: "...")
+# Then proceed with implementation
 ```
 
-### Add a roadmap item
+**When you discover a bug while working on something else:**
+```
+create_issue(
+  title: "Bug: [what's broken]",
+  teamId: "...",
+  priority: "HIGH",
+  description: "Found while working on ENG-42.\n\n## Steps to reproduce\n...\n\n## Expected vs actual\n...",
+  labelIds: ["bug_label_id"]
+)
+add_comment(issueId: "ENG-42", body: "Found related bug, filed as ENG-45")
+```
+
+### 3. Work — Update Progress as You Go
+
+As you implement, keep the issue updated:
 
 ```
-1. list_roadmap_versions → find version ID
-2. create_roadmap_item(title: "SSO Support", category: "FEATURE", versionId: "...")
+# When you start
+update_issue(issueId: "...", statusId: "in_progress_id")
+add_comment(issueId: "...", body: "Starting implementation. Approach: ...")
+
+# When you make significant progress or hit a decision point
+add_comment(issueId: "...", body: "Implemented the data model. Moving to API layer next.")
+
+# When you find something relevant
+add_comment(issueId: "...", body: "Note: this also affects the billing module, may need follow-up.")
+
+# When you're blocked or need input
+add_comment(issueId: "...", body: "Blocked: need decision on whether to use WebSockets or SSE for real-time updates.")
 ```
+
+### 4. Complete — Close Issues and File Follow-ups
+
+```
+# Mark done
+update_issue(issueId: "...", statusId: "done_id")
+add_comment(issueId: "...", body: "Completed. Changes:\n- Added X\n- Modified Y\n- Tests passing")
+
+# If you identified follow-up work
+create_issue(
+  title: "Follow-up: [what needs doing next]",
+  teamId: "...",
+  priority: "MEDIUM",
+  description: "Identified during work on ENG-42. ..."
+)
+```
+
+### 5. Review — Triage and Manage
+
+**Daily triage / sprint review:**
+```
+list_issues(priority: "URGENT")                    → what's on fire?
+list_issues(assigneeId: "user_id")                 → what's on my plate?
+list_cycles(status: "ACTIVE")                      → current sprint
+list_issues(statusId: "in_progress_id")            → what's actively being worked on?
+```
+
+**Project status check:**
+```
+get_project(projectId: "...")                      → milestones, issue count, progress
+list_issues(projectId: "...", statusId: "done_id") → what's completed
+list_issues(projectId: "...", statusId: "todo_id") → what's remaining
+```
+
+## Issue Description Best Practices
+
+When creating issues, write descriptions in **Markdown** — they render as rich text in the UI:
+
+```markdown
+## Summary
+Brief description of what needs to happen.
+
+## Context
+Why this matters. Link related issues by identifier: see ENG-42.
+
+## Acceptance Criteria
+- [ ] First requirement
+- [ ] Second requirement
+- [ ] Tests pass
+
+## Technical Notes
+Implementation hints, relevant files, constraints.
+```
+
+For bugs:
+```markdown
+## Bug Report
+What's broken and what impact it has.
+
+## Steps to Reproduce
+1. Go to...
+2. Click...
+3. Observe...
+
+## Expected Behavior
+What should happen.
+
+## Actual Behavior
+What happens instead.
+
+## Environment
+Browser, OS, relevant config.
+```
+
+## When to Use Velocity Proactively
+
+**DO use it when:**
+- Starting work on a task → create or update an issue to In Progress
+- Finishing work → mark issue Done, add summary comment
+- Finding a bug during development → file it immediately
+- Making a decision → comment on the issue explaining your reasoning
+- The user asks what's left / what's next → query issues and summarize
+- You need context about existing work → search and read issues + comments
+
+**DON'T wait for the user to explicitly say "create an issue" or "update the status."** If you're doing development work and there's an issue to track it, keep it updated. If there isn't an issue, consider creating one.
+
+## Tool Reference
+
+### Issue Tracking (7 tools)
+| Tool | Required | Optional |
+|------|----------|----------|
+| `list_issues` | — | `projectId`, `statusId`, `priority`, `assigneeId`, `labelId`, `limit`, `offset` |
+| `get_issue` | `issueId` | — |
+| `create_issue` | `title`, `teamId` | `description`, `priority`, `statusId`, `assigneeId`, `labelIds`, `projectId` |
+| `update_issue` | `issueId` | `title`, `description`, `priority`, `statusId`, `assigneeId` |
+| `search_issues` | `query` | `limit` |
+| `add_comment` | `issueId`, `body` | `parentId` |
+| `list_comments` | `issueId` | — |
+
+### Projects & Cycles (4 tools)
+| Tool | Required | Optional |
+|------|----------|----------|
+| `list_projects` | — | `status` (BACKLOG/PLANNED/IN_PROGRESS/COMPLETED/CANCELLED) |
+| `get_project` | `projectId` | — |
+| `list_cycles` | — | `status` (UPCOMING/ACTIVE/COMPLETED) |
+| `get_cycle` | `id` | — |
+
+### Workspace Metadata (4 tools)
+| Tool | Required | Optional |
+|------|----------|----------|
+| `list_teams` | — | — |
+| `list_labels` | — | — |
+| `list_statuses` | — | — |
+| `list_members` | — | — |
+
+### Roadmap (9 tools)
+| Tool | Required | Optional |
+|------|----------|----------|
+| `list_roadmap_items` | — | `status`, `category`, `versionId`, `limit` |
+| `create_roadmap_item` | `title` | `description`, `status`, `category`, `versionId`, `assigneeId`, `isPublic` |
+| `update_roadmap_item` | `id` | `title`, `description`, `status`, `category`, `versionId`, `assigneeId`, `isPublic` |
+| `delete_roadmap_item` | `id` | — |
+| `vote_roadmap_item` | `id` | — |
+| `list_roadmap_versions` | — | — |
+| `create_roadmap_version` | `name` | `description`, `targetDate` |
+| `get_roadmap_settings` | — | — |
+| `update_roadmap_settings` | — | `isPublicEnabled`, `allowSubmissions`, `allowVoting` |
+
+### Workspace & User (10 tools)
+| Tool | Required | Optional |
+|------|----------|----------|
+| `list_workspaces` | — | — |
+| `create_workspace` | `name`, `slug` | `logoUrl` |
+| `delete_workspace` | `id` | — |
+| `get_workspace` | — | — |
+| `update_workspace` | — | `name`, `description` |
+| `get_current_user` | — | — |
+| `update_current_user` | — | `displayName`, `avatarUrl` |
+| `list_user_api_keys` | — | — |
+| `create_user_api_key` | `name`, `scopes` | — |
+| `revoke_user_api_key` | `id` | — |
+
+### Custom Domains (4 tools)
+| Tool | Required | Optional |
+|------|----------|----------|
+| `list_domains` | — | — |
+| `add_domain` | `domain` | — |
+| `verify_domain` | `id` | — |
+| `remove_domain` | `id` | — |
+
+## Key Concepts
+
+- **Identifiers**: Issues use team-prefixed identifiers like `ENG-42`. Always prefer these over UUIDs when talking to the user.
+- **Priority**: URGENT, HIGH, MEDIUM, LOW, NONE.
+- **Statuses**: Workspace-specific. Always call `list_statuses` to discover the exact names and IDs. Common groups: backlog, unstarted, started (In Progress), completed (Done), cancelled.
+- **Labels**: Workspace-specific categorization (bug, feature, improvement, etc.). Discover with `list_labels`.
+- **Projects**: Groups of related issues with milestones. Issues can belong to one project.
+- **Cycles**: Time-boxed sprints. Issues can be assigned to a cycle.
